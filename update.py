@@ -14,27 +14,26 @@ class Updatedb(object):
         self.db.initialize()
         self.engine = create_engine('mysql://root:autott@120.26.211.94/test?charset=utf8')
 
-    def date_start_update(self):
+    def _date_start_update(self):
         latest = self.db.get_latest_date()
         now = latest + datetime.timedelta(1)
         return str(now)
 
-    def get_ts_data(self):
+    def _get_ts_data(self):
         if self.code in Market_index_list:
-            return ts.get_h_data(code=self.code[1:], index=True, start=self.date_start_update())
+            return ts.get_h_data(code=self.code[1:], index=True, start=self._date_start_update())
         else:
-            return ts.get_h_data(code=self.code, autype='hfq', start=self.date_start_update())
+            return ts.get_h_data(code=self.code, autype='hfq', start=self._date_start_update())
 
     def append_to_db(self):
-        df = self.get_ts_data()
+        df = self._get_ts_data()
         if df is None:
             return
         df.to_sql(self.code, self.engine, if_exists='append')
         self.db.sort_by_date()
         if not self.db.exist:
-            self.db.exist = True
-            self.db.set_date_type()
-            self.db.set_pri_key()
+            self.db.initialize()
+        self.db.sort_by_date()
 
 
 

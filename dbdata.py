@@ -1,6 +1,7 @@
 import tushare
 import MySQLdb
 from datetime import datetime
+from map_code import map_code
 
 
 class Dbbase(object):
@@ -24,8 +25,44 @@ class Dboperation(Dbbase):
             print 'Not exist', e
             self.exist = False
             return
-        self.sort_by_date()
         self.exist = True
+        self._create_change_rate_if_not_exist()
+        self._set_date_type()
+        self._set_pri_key()
+
+    def _get_desc_result(self, raw):
+        self.execute('desc {} {}'.format(self.code, raw))
+        return self.cursor.fetchall()
+
+    def _set_date_type(self):
+        if not self.exist:
+            return
+        if self._get_desc_result('date')[0][1] == 'date':
+            return
+        self.execute('alter table {} modify date date'.format(self.code))
+        self.conn.commit()
+
+    def _set_pri_key(self):
+        if not self.exist:
+            return
+        if self._get_desc_result('date')[0][3] == 'PRI':
+            return
+        self.execute('alter table {} add primary key (date)'.format(self.code))
+        self.conn.commit()
+
+    def _create_change_rate_if_not_exist(self):
+        if not self.exist:
+            return
+        self.execute('desc {} change_rate'.format(self.code))
+        if not self.cursor.fetchall():
+            self.execute('alter table {} add change_rate double after close'.format(self.code))
+            self.conn.commit()
+
+    def sort_by_date(self):
+        if not self.exist:
+            return
+        self.execute('alter table {} order by date desc'.format(self.code))
+        self.conn.commit()
 
     def get_latest_date(self):
         if not self.exist:
@@ -41,27 +78,12 @@ class Dboperation(Dbbase):
         self.execute('select date from {} order by date limit 1'.format(self.code))
         return self.cursor.fetchall()[0][0]
 
-    def sort_by_date(self):
-        if not self.exist:
-            return
-        self.execute('alter table {} order by date desc'.format(self.code))
-        self.conn.commit()
-
-    def set_date_type(self):
-        if not self.exist:
-            return
-        self.execute('alter table {} modify date date'.format(self.code))
-
-    def set_pri_key(self):
-        if not self.exist:
-            return
-        self.execute('alter table {} add primary key(date)'.format(self.code))
-
-
-
 
 if __name__ == '__main__':
-    data = Dboperation('000002')
-    data.initialize()
+    #data = Dboperation('b000001')
+    #data.initialize()
+    for code in map_code:
+        data = Dboperation(code)
+        data.initialize()
     #print data.get_latest_date()
     #print data.get_start_date
