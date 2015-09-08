@@ -1,18 +1,17 @@
 import tushare as ts
-from dbdata import Dboperation
+from dboperation import Dboperation
 import datetime
 from sqlalchemy import create_engine
-from map_code import map_code
+from map_code import code_list, market_index_list
 
 
-Market_index_list = ['b000001', 'b399001', 'b399005', 'b399006', 'b000016', 'b000300']
+engine = create_engine('mysql://root:autott@120.26.211.94/test?charset=utf8')
 
 class Updatedb(object):
-    def __init__(self, code):
+    def __init__(self, db, code):
+        self.db = db
         self.code = code
-        self.db = Dboperation(self.code)
-        self.db.initialize()
-        self.engine = create_engine('mysql://root:autott@120.26.211.94/test?charset=utf8')
+        self.db.initialize(self.code)
 
     def _date_start_update(self):
         latest = self.db.get_latest_date()
@@ -20,7 +19,7 @@ class Updatedb(object):
         return str(now)
 
     def _get_ts_data(self):
-        if self.code in Market_index_list:
+        if self.code in market_index_list:
             return ts.get_h_data(code=self.code[1:], index=True, start=self._date_start_update())
         else:
             return ts.get_h_data(code=self.code, autype='hfq', start=self._date_start_update())
@@ -29,17 +28,17 @@ class Updatedb(object):
         df = self._get_ts_data()
         if df is None:
             return
-        df.to_sql(self.code, self.engine, if_exists='append')
-        self.db.sort_by_date()
-        if not self.db.exist:
-            self.db.initialize()
-        self.db.sort_by_date()
+        df.to_sql(self.code, engine, if_exists='append')
 
 
 
 if __name__ == '__main__':
-    for code in Market_index_list + map_code.keys():
-        update = Updatedb(code)
+    db = Dboperation()
+    for code in market_index_list.keys() + code_list.keys():
+        update = Updatedb(db, code)
         update.append_to_db()
 
+    db_init = Dboperation()
+    for code in market_index_list.keys() + code_list.keys():
+        db_init.initialize(code)
 
