@@ -19,10 +19,12 @@ class Dboperation(Dbbase):
             self.exist = False
             return
         self.exist = True
-        self._create_change_rate_if_not_exist()
+        self._add_new_column_if_not_exit(name='fluctuation', after='close')
+        self._add_new_column_if_not_exit(name='change_rate', after='close')
         self._set_date_type()
         self._set_pri_key()
         self.calculate_change_rate()
+        self.calculate_fluctuation_rate()
 
     def _get_desc_result(self, raw):
         self.execute('desc {} {}'.format(self.code, raw))
@@ -44,13 +46,19 @@ class Dboperation(Dbbase):
         self.execute('alter table {} add primary key (date)'.format(self.code))
         self.conn.commit()
 
-    def _create_change_rate_if_not_exist(self):
+    def _add_new_column_if_not_exit(self, name, after):
         if not self.exist:
             return
-        self.execute('desc {} change_rate'.format(self.code))
+        self.execute('desc {} {}'.format(self.code, name))
         if not self.cursor.fetchall():
-            self.execute('alter table {} add change_rate double after close'.format(self.code))
+            self.execute('alter table {} add {} double after {}'.format(self.code, name, after))
             self.conn.commit()
+
+    def modify_column(self):
+        if not self.exist:
+            return
+        self.execute('alter table {} modify  fluctuation double after change_rate'.format(self.code))
+        self.conn.commit()
 
     def calculate_change_rate(self):
         if not self.exist:
@@ -67,6 +75,17 @@ class Dboperation(Dbbase):
                 last_close = today_close
             self.execute("update {} set change_rate = {:.2f} where date = '{}'".format
                          (self.code, 100 * (today_close/last_close - 1), data[0]))
+        self.conn.commit()
+
+    def calculate_fluctuation_rate(self):
+        if not self.exist:
+            return
+        self.execute('select date,high,low from {} where fluctuation is null'.format(self.code))
+        data_for_calc = self.cursor.fetchall()
+        for data in data_for_calc:
+            (date_to_update, high, low) = data
+            self.execute("update {} set fluctuation = {:.2f} where date = '{}'".format
+                         (self.code, 100 * (high/low - 1), date_to_update))
         self.conn.commit()
 
     def sort_by_date(self):
