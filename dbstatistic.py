@@ -96,8 +96,6 @@ class Dbstatistic(Dbbase):
 
 
 
-
-
 if __name__ == '__main__':
     db = Dbstatistic()
     #db.initialize('601919')
