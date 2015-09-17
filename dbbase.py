@@ -1,7 +1,6 @@
 import MySQLdb
-import sys
-sys.path.append('../bin')
 from dbinfo import dbinfo
+
 
 class Dbbase(object):
     def __init__(self):
