@@ -3,9 +3,10 @@ from dboperation import Dboperation
 import datetime
 from sqlalchemy import create_engine
 from map_code import code_list, market_index_list
+from dbinfo import dbinfo
 
 
-engine = create_engine('mysql://root:autott@120.26.211.94/test?charset=utf8')
+engine = create_engine('mysql://{}:{}@{}/test?charset=utf8'.format(dbinfo['USER'], dbinfo['PASSWORD'], dbinfo['HOST_IP']))
 
 class Updatedb(object):
     def __init__(self, db, code):
