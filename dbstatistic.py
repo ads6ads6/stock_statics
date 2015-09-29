@@ -1,7 +1,19 @@
 from dbbase import Dbbase
 from map_code import code_list, market_index_list
 
+
 sh = 'b000001'
+START_DATE = '2001-01-01'
+
+
+def get_market_date(last_days=1):
+    operation = Dbbase()
+    operation.execute('select date from {} order by date desc limit {}'.format(sh, last_days))
+    result = operation.cursor.fetchall()
+    if not result:
+        return False
+    return result[-1][0]
+
 
 class Dbstatistic(Dbbase):
     def __init__(self):
@@ -16,8 +28,8 @@ class Dbstatistic(Dbbase):
         if not code.startswith('b'):
             self.code = "`{}`".format(code)
         self.is_suspension = self._check_suspension(code=self.code)
-        self.market_last_trading_day = self._get_latest_date(code=sh, last_days=1)[0]
-        self.code_last_trading_day = self._get_latest_date(code=self.code, last_days=1)[0]
+        self.market_last_trading_day = self._get_latest_date(code=sh, last_days=1)
+        self.code_last_trading_day = self._get_latest_date(code=self.code, last_days=1)
 
     def _check_suspension(self, code):
         self.execute('select date from {} order by date desc limit 1'.format(code))
@@ -33,17 +45,17 @@ class Dbstatistic(Dbbase):
         self.execute('select date from {} order by date desc limit {}'.format(code, last_days))
         result = self.cursor.fetchall()
         if result:
-            return [item[0] for item in result]
+            return result[-1][0]
 
-    def fluctuation_in_one_days(self, day):
-        self.execute("select high,low from {} where date = '{}'".format(self.code, day))
-        result = self.cursor.fetchall()
-        if not result:
-            return 0.0
-        high_list, low_list = zip(*result)
-        highest = max(high_list)
-        lowest = min(low_list)
-        return '{:.2f}'.format(100*(highest-lowest)/lowest)
+    def cal_fluc(self, start, end):
+        self.execute("select fluctuation from {} where date >= '{}' and date <= '{}'".format(self.code, start, end))
+        output = self.cursor.fetchall()
+        if not output:
+            return False
+        result = [item[0] for item in output]
+        return sum(fluc**2 for fluc in result)/len(result)
+
+
 
     def check_isReach_highest_price(self, day):
         self.execute('select max(high) from {}'.format(self.code))
@@ -96,19 +108,18 @@ class Dbstatistic(Dbbase):
 
 
 
-if __name__ == '__main__':
-    db = Dbstatistic()
-    #db.initialize('601919')
+
+    #print db.cal_fluc(start='2001-08-10', end='2015-08-20')
     #print db.issuspension
     #print db.get_latest_date(10)
 
     #print db.fluctuation_in_recent_days(5)
 
     #flu_dict = {}
-    for code in code_list.keys() + market_index_list.keys():
-        db.initialize(code)
-        if db.check_isReach_highest_price(day=db.market_last_trading_day):
-            print db.code
+    ##for code in code_list.keys() + market_index_list.keys():
+    ##    db.initialize(code)
+    ##    if db.check_isReach_highest_price(day=db.market_last_trading_day):
+    ##        print db.code
         #code_flu = db.fluctuation_in_one_days(db.get_start_date(1))
         #flu_dict[code] = code_flu
 

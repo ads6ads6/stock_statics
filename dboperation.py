@@ -2,6 +2,7 @@ from dbbase import Dbbase
 from datetime import datetime
 from map_code import code_list, market_index_list
 
+
 class Dboperation(Dbbase):
     def __init__(self):
         super(Dboperation, self).__init__()
@@ -104,6 +105,14 @@ class Dboperation(Dbbase):
             raise
         return self.cursor.fetchall()[0][0]
 
+    def update_type(self):
+        if not self.exist:
+            return
+        self.execute('desc {} volume'.format(self.code))
+        if 'double' in self.cursor.fetchall()[0]:
+            self.execute('alter table {} modify column volume BIGINT(20)'.format(self.code))
+            self.execute('alter table {} modify column amount BIGINT(20)'.format(self.code))
+            self.conn.commit()
 
 
 if __name__ == '__main__':
@@ -113,6 +122,7 @@ if __name__ == '__main__':
     #data.calculate_change_rate()
     for code in market_index_list.keys() + code_list.keys():
         dbdata.initialize(code)
+        dbdata.update_type()
 
     #print data.get_latest_date()
     #print data.get_start_date

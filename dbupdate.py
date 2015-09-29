@@ -1,5 +1,7 @@
 import tushare as ts
 from dboperation import Dboperation
+from dbstatistic import Dbstatistic, get_market_date, START_DATE
+from dbbase import Dbbase
 import datetime
 from sqlalchemy import create_engine
 from map_code import code_list, market_index_list
@@ -7,6 +9,7 @@ from dbinfo import dbinfo
 
 
 engine = create_engine('mysql://{}:{}@{}/test?charset=utf8'.format(dbinfo['USER'], dbinfo['PASSWORD'], dbinfo['HOST_IP']))
+
 
 class Updatedb(object):
     def __init__(self, db, code):
@@ -26,11 +29,62 @@ class Updatedb(object):
             return ts.get_h_data(code=self.code, autype='hfq', start=self._date_start_update())
 
     def append_to_db(self):
+        market_latest_date = get_market_date(1)
+        if self.db.get_latest_date() == market_latest_date:
+            return
         df = self._get_ts_data()
         if df is None:
             return
         df.to_sql(self.code, engine, if_exists='append')
 
+
+class UpdateFluc(Dbbase):
+    def __init__(self):
+        super(UpdateFluc, self).__init__()
+        self.table = 'fluctuation'
+        self.latest_update = ''
+        self.dbstatistic = Dbstatistic()
+        self.exist = False
+
+    def _check_result(self, code):
+        self.execute("select * from {} where code = '{}'".format(self.table, code))
+        result = self.cursor.fetchall()
+        if not result:
+            return ''
+        self.exist = True
+        return result[0][2]
+
+    def update_table(self, code, exist):
+        latest_date = get_market_date(1)
+        five_days_gao = get_market_date(5)
+        twenty_days_ago = get_market_date(20)
+        half_years_ago = get_market_date(120)
+        year_ago = get_market_date(240)
+        fluctuation_lastday = self.dbstatistic.cal_fluc(start=latest_date, end=latest_date)
+        fluctuation_lastweek = self.dbstatistic.cal_fluc(start=five_days_gao, end=latest_date)
+        fluctuation_lastmonth = self.dbstatistic.cal_fluc(start=twenty_days_ago, end=latest_date)
+        fluctuation_halfyear = self.dbstatistic.cal_fluc(start=half_years_ago, end=latest_date)
+        fluctuation_lastyear = self.dbstatistic.cal_fluc(start=year_ago, end=latest_date)
+        fluctuation_total = self.dbstatistic.cal_fluc(start=START_DATE, end=latest_date)
+        end = self.dbstatistic.code_last_trading_day
+        if exist:
+            self.execute("update fluctuation set end = '{}', fluctuation_total = '{}', fluctuation_lastyear = '{}',fluctuation_halfyear= '{}',\
+                          fluctuation_lastmonth = '{}', fluctuation_lastweek = '{}', fluctuation_lastday = '{}' where code = '{}'"
+                         .format(end, fluctuation_total, fluctuation_lastyear, fluctuation_halfyear,
+                                 fluctuation_lastmonth, fluctuation_lastweek, fluctuation_lastday, code))
+        else:
+            self.execute("insert into fluctuation values('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')".
+                         format(code, START_DATE, end, fluctuation_total, fluctuation_lastyear, fluctuation_halfyear, fluctuation_lastmonth,
+                                fluctuation_lastweek, fluctuation_lastday))
+        self.conn.commit()
+
+    def run_update(self):
+        for code in market_index_list.keys() + code_list.keys():
+            self.dbstatistic.initialize(code)
+            if self.dbstatistic.code_last_trading_day == self._check_result(code):
+                continue
+            self.update_table(code, exist=self.exist)
+            self.exist = False
 
 
 if __name__ == '__main__':
@@ -42,4 +96,8 @@ if __name__ == '__main__':
     db_init = Dboperation()
     for code in market_index_list.keys() + code_list.keys():
         db_init.initialize(code)
+
+    update_fluc = UpdateFluc()
+    update_fluc.run_update()
+
 
