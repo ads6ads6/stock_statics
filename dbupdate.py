@@ -1,6 +1,6 @@
 import tushare as ts
 from dboperation import Dboperation
-from dbstatistic import Dbstatistic, get_market_date, START_DATE
+from dbstatistic import Dbstatistic, get_market_date, START_DATE, sh
 from dbbase import Dbbase
 import datetime
 from sqlalchemy import create_engine
@@ -12,10 +12,9 @@ engine = create_engine('mysql://{}:{}@{}/test?charset=utf8'.format(dbinfo['USER'
 
 
 class Updatedb(object):
-    def __init__(self, db, code):
-        self.db = db
-        self.code = code
-        self.db.initialize(self.code)
+    def __init__(self):
+        self.db = Dboperation()
+        self.code = None
 
     def _date_start_update(self):
         latest = self.db.get_latest_date()
@@ -31,11 +30,23 @@ class Updatedb(object):
     def append_to_db(self):
         market_latest_date = get_market_date(1)
         if self.db.get_latest_date() == market_latest_date:
-            return
+            if self.code != sh:
+                return
         df = self._get_ts_data()
         if df is None:
             return
-        df.to_sql(self.code, engine, if_exists='append')
+        db_data = df.T.to_dict()
+        self.db.append_db(db_data)
+
+    def run_update(self):
+        for code in code_list.keys():
+            self.code = code
+            self.db.initialize(code)
+            print self.db.exist
+            if not self.db.exist:
+                self.db.create_table()
+            self.append_to_db()
+            self.db.initialize(code)
 
 
 class UpdateFluc(Dbbase):
@@ -88,14 +99,16 @@ class UpdateFluc(Dbbase):
 
 
 if __name__ == '__main__':
-    db = Dboperation()
-    for code in market_index_list.keys() + code_list.keys():
-        update = Updatedb(db, code)
-        update.append_to_db()
+    update_db = Updatedb()
+    update_db.run_update()
 
-    db_init = Dboperation()
-    for code in market_index_list.keys() + code_list.keys():
-        db_init.initialize(code)
+    #for code in market_index_list.keys() + code_list.keys():
+    #    update = Updatedb(db, code)
+    #    update.append_to_db()
+
+    #db_init = Dboperation()
+    #for code in market_index_list.keys() + code_list.keys():
+    #    db_init.initialize(code)
 
     update_fluc = UpdateFluc()
     update_fluc.run_update()

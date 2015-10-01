@@ -114,6 +114,35 @@ class Dboperation(Dbbase):
             self.execute('alter table {} modify column amount BIGINT(20)'.format(self.code))
             self.conn.commit()
 
+    def create_table(self):
+        if self.exist:
+            return
+        self.execute("create table {} (date date default '0000-00-00' primary key, ".format(self.code) +
+                     "open double, " +
+                     "close double, " +
+                     "high double, " +
+                     "low double, " +
+                     "change_rate double, " +
+                     "fluctuation double, " +
+                     "volume bigint(20), " +
+                     "amount bigint(20) )")
+        self.conn.commit()
+
+    def append_db(self, db_data):
+        for timestamp in db_data:
+            date = str(timestamp).split()[0]
+            value = db_data[timestamp]
+            self.execute("insert into {} values (".format(self.code) +
+                         "'{}', ".format(date) +
+                         "{}, ".format(value['open']) +
+                         "{}, ".format(value['close']) +
+                         "{}, ".format(value['high']) +
+                         "{}, ".format(value['low']) +
+                         "null, " +
+                         "null, " +
+                         "{}, ".format(value['volume']) +
+                         "{} )".format(value['amount']))
+            self.conn.commit()
 
 if __name__ == '__main__':
     dbdata = Dboperation()
