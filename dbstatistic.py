@@ -116,7 +116,7 @@ class Dbstatistic(Dbbase):
     #print db.fluctuation_in_recent_days(5)
 
     #flu_dict = {}
-    ##for code in code_list.keys() + market_index_list.keys():
+    ##for code in code_list.keys() + market_index_list:
     ##    db.initialize(code)
     ##    if db.check_isReach_highest_price(day=db.market_last_trading_day):
     ##        print db.code

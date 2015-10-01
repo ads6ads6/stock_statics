@@ -149,7 +149,7 @@ if __name__ == '__main__':
     #data = Dboperation('b000001')
     #data.initialize()
     #data.calculate_change_rate()
-    for code in market_index_list.keys() + code_list.keys():
+    for code in market_index_list + code_list.keys():
         dbdata.initialize(code)
         dbdata.update_type()
 

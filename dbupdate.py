@@ -39,7 +39,7 @@ class Updatedb(object):
         self.db.append_db(db_data)
 
     def run_update(self):
-        for code in market_index_list.keys() + code_list.keys():
+        for code in market_index_list + code_list.keys():
             self.code = code
             self.db.initialize(code)
             if not self.db.exist:
@@ -90,7 +90,7 @@ class UpdateFluc(Dbbase):
         self.conn.commit()
 
     def run_update(self):
-        for code in market_index_list.keys() + code_list.keys():
+        for code in market_index_list + code_list.keys():
             self.dbstatistic.initialize(code)
             if self.dbstatistic.code_last_trading_day == self._check_result(code):
                 continue
@@ -102,12 +102,12 @@ if __name__ == '__main__':
     update_db = Updatedb()
     update_db.run_update()
 
-    #for code in market_index_list.keys() + code_list.keys():
+    #for code in market_index_list + code_list.keys():
     #    update = Updatedb(db, code)
     #    update.append_to_db()
 
     #db_init = Dboperation()
-    #for code in market_index_list.keys() + code_list.keys():
+    #for code in market_index_list + code_list.keys():
     #    db_init.initialize(code)
 
     update_fluc = UpdateFluc()
