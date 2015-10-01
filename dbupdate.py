@@ -39,7 +39,7 @@ class Updatedb(object):
         self.db.append_db(db_data)
 
     def run_update(self):
-        for code in code_list.keys():
+        for code in market_index_list.keys() + code_list.keys():
             self.code = code
             self.db.initialize(code)
             print self.db.exist
@@ -47,6 +47,7 @@ class Updatedb(object):
                 self.db.create_table()
             self.append_to_db()
             self.db.initialize(code)
+
 
 
 class UpdateFluc(Dbbase):
