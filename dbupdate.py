@@ -28,10 +28,10 @@ class Updatedb(object):
             return ts.get_h_data(code=self.code, autype='hfq', start=self._date_start_update())
 
     def append_to_db(self):
-        market_latest_date = get_market_date(1)
-        if self.db.get_latest_date() == market_latest_date:
-            if self.code != sh:
-                return
+        #market_latest_date = get_market_date(1)
+        #if self.db.get_latest_date() == market_latest_date:
+        #    if self.code != sh:
+        #        return
         df = self._get_ts_data()
         if df is None:
             return
@@ -42,7 +42,6 @@ class Updatedb(object):
         for code in market_index_list.keys() + code_list.keys():
             self.code = code
             self.db.initialize(code)
-            print self.db.exist
             if not self.db.exist:
                 self.db.create_table()
             self.append_to_db()
