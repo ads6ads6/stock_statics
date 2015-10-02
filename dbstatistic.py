@@ -1,4 +1,5 @@
 from dbbase import Dbbase
+from math import sqrt
 
 sh = 'b000001'
 START_DATE = '2001-01-01'
@@ -51,9 +52,7 @@ class Dbstatistic(Dbbase):
         if not output:
             return 'null'
         result = [item[0] for item in output]
-        return sum(fluc**2 for fluc in result)/len(result)
-
-
+        return sqrt(sum(fluc**2 for fluc in result)/len(result))
 
     def check_isReach_highest_price(self, day):
         self.execute('select max(high) from {}'.format(self.code))
