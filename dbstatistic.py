@@ -1,6 +1,4 @@
 from dbbase import Dbbase
-from map_code import code_list, market_index_list
-
 
 sh = 'b000001'
 START_DATE = '2001-01-01'
@@ -51,7 +49,7 @@ class Dbstatistic(Dbbase):
         self.execute("select fluctuation from {} where date >= '{}' and date <= '{}'".format(self.code, start, end))
         output = self.cursor.fetchall()
         if not output:
-            return False
+            return 'null'
         result = [item[0] for item in output]
         return sum(fluc**2 for fluc in result)/len(result)
 

@@ -1,12 +1,13 @@
+import datetime
+
+from sqlalchemy import create_engine
+
 import tushare as ts
 from dboperation import Dboperation
-from dbstatistic import Dbstatistic, get_market_date, START_DATE, sh
+from dbstatistic import Dbstatistic, get_market_date, START_DATE
 from dbbase import Dbbase
-import datetime
-from sqlalchemy import create_engine
 from map_code import code_list, market_index_list
 from dbinfo import dbinfo
-
 
 engine = create_engine('mysql://{}:{}@{}/test?charset=utf8'.format(dbinfo['USER'], dbinfo['PASSWORD'], dbinfo['HOST_IP']))
 
@@ -79,20 +80,26 @@ class UpdateFluc(Dbbase):
         fluctuation_total = self.dbstatistic.cal_fluc(start=START_DATE, end=latest_date)
         end = self.dbstatistic.code_last_trading_day
         if exist:
-            self.execute("update fluctuation set end = '{}', fluctuation_total = '{}', fluctuation_lastyear = '{}',fluctuation_halfyear= '{}',\
-                          fluctuation_lastmonth = '{}', fluctuation_lastweek = '{}', fluctuation_lastday = '{}' where code = '{}'"
-                         .format(end, fluctuation_total, fluctuation_lastyear, fluctuation_halfyear,
-                                 fluctuation_lastmonth, fluctuation_lastweek, fluctuation_lastday, code))
+            self.execute("update fluctuation set end = '{}',".format(end) +
+                         "fluctuation_total = {},".format(fluctuation_total) +
+                         "fluctuation_lastyear = {},".format(fluctuation_lastyear) +
+                         "fluctuation_halfyear= {},".format(fluctuation_halfyear) +
+                         "fluctuation_lastmonth = {},".format(fluctuation_lastmonth) +
+                         "fluctuation_lastweek = {},".format(fluctuation_lastweek) +
+                         "fluctuation_lastday = {} where code = '{}'".format(fluctuation_lastday, code)
+                         )
         else:
-            self.execute("insert into fluctuation values('{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}', '{}')".
-                         format(code, START_DATE, end, fluctuation_total, fluctuation_lastyear, fluctuation_halfyear, fluctuation_lastmonth,
+            self.execute("insert into fluctuation values(" +
+                         "'{}', '{}', '{}', {}, {}, {}, {}, {}, {})".
+                         format(code, START_DATE, end, fluctuation_total, fluctuation_lastyear,
+                                fluctuation_halfyear, fluctuation_lastmonth,
                                 fluctuation_lastweek, fluctuation_lastday))
         self.conn.commit()
 
     def run_update(self):
         for code in market_index_list + code_list.keys():
             self.dbstatistic.initialize(code)
-            if self.dbstatistic.code_last_trading_day == self._check_result(code):
+            if get_market_date(1) == self._check_result(code):
                 continue
             self.update_table(code, exist=self.exist)
             self.exist = False
