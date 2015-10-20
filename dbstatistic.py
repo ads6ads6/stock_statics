@@ -1,5 +1,6 @@
 from dbbase import Dbbase
 from math import sqrt
+from map_code import code_list, market_index_list
 
 sh = 'b000001'
 START_DATE = '2001-01-01'
@@ -62,7 +63,7 @@ class Dbstatistic(Dbbase):
         if not result:
             return False
         selected_price = result[0][1]
-        if selected_price == highest_price:
+        if selected_price > highest_price*0.95:
             return True
 
     def change_rate_byweekday(self):
@@ -100,6 +101,19 @@ class Dbstatistic(Dbbase):
                          .format(self.start, self.end, i))
             sum_rate, count = self.cursor.fetchall()[0]
             print '{:8.4f}'.format(sum_rate/count)
+
+
+
+if __name__ == '__main__':
+    db = Dbstatistic()
+    lastday = db._get_latest_date(sh, 1)
+    print lastday
+    for code in market_index_list + code_list.keys():
+        db.initialize(code)
+        if db.check_isReach_highest_price(lastday):
+            print code
+
+
 
 
 

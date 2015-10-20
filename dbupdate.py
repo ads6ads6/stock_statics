@@ -62,6 +62,7 @@ class UpdateFluc(Dbbase):
         self.execute("select * from {} where code = '{}'".format(self.table, code))
         result = self.cursor.fetchall()
         if not result:
+            self.exist = False
             return ''
         self.exist = True
         return result[0][2]
@@ -99,10 +100,17 @@ class UpdateFluc(Dbbase):
     def run_update(self):
         for code in market_index_list + code_list.keys():
             self.dbstatistic.initialize(code)
-            if get_market_date(1) == self._check_result(code):
+            end_date = self._check_result(code)
+            if get_market_date(1) == end_date:
                 continue
             self.update_table(code, exist=self.exist)
-            self.exist = False
+
+
+class Update_highest(object):
+    pass
+
+
+
 
 
 if __name__ == '__main__':
