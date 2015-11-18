@@ -1,6 +1,7 @@
 import datetime
 
 from sqlalchemy import create_engine
+import requests
 
 import tushare as ts
 from dboperation import Dboperation
@@ -106,14 +107,54 @@ class UpdateFluc(Dbbase):
             self.update_table(code, exist=self.exist)
 
 
+class UpdateStockBasic(Dbbase):
+    def __init__(self):
+        super(UpdateStockBasic, self).__init__()
+        self.table = 'stock_basic'
+        self.exist = True
+
+    def _check_result(self, code):
+        self.execute("select * from {} where code = '{}'".format(self.table, code))
+        result = self.cursor.fetchall()
+        if not result:
+            self.exist = False
+        else:
+            self.exist = True
+
+    def get_pe_value(self, code):
+        if code.startswith('6'):
+            code = 'sh' + code
+        else:
+            code = 'sz' + code
+        out = requests.get('http://qt.gtimg.cn/q={}'.format(code)).text.split('~')[-11]
+        if not out:
+            pe = 'null'
+        else:
+            pe = float(out)
+        return pe
+
+    def update_table(self, code):
+        pe = self.get_pe_value(code)
+        if self.exist:
+            self.execute('update stock_basic set pe = {} where code = {}'.format(pe, code))
+        else:
+            self.execute("insert into stock_basic values('{}',{})".format(code, pe))
+        self.conn.commit()
+
+    def run_update(self):
+        for code in code_list.keys():
+            self._check_result(code)
+            self.update_table(code)
+
 class Update_highest(object):
     pass
 
 
-
-
-
 if __name__ == '__main__':
+    update_basic = UpdateStockBasic()
+    update_basic.run_update()
+
+
     update_db = Updatedb()
     update_db.run_update()
 

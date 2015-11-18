@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from dbbase import Dbbase
 from map_code import code_list, market_index_list
 
@@ -75,8 +74,12 @@ class Dboperation(Dbbase):
                 last_close = result[0][0]
             else:
                 last_close = today_close
+            if last_close < 0.01:
+                rate = 0
+            else:
+                rate = 100 * (today_close/last_close - 1)
             self.execute("update {} set change_rate = {:.2f} where date = '{}'".format
-                         (self.code, 100 * (today_close/last_close - 1), data[0]))
+                         (self.code, rate, data[0]))
         self.conn.commit()
 
     def calculate_fluctuation_rate(self):
@@ -86,8 +89,13 @@ class Dboperation(Dbbase):
         data_for_calc = self.cursor.fetchall()
         for data in data_for_calc:
             (date_to_update, high, low) = data
+            if low < 0.01:
+                rate = 0
+            else:
+                rate = 100 * (high/low - 1)
+
             self.execute("update {} set fluctuation = {:.2f} where date = '{}'".format
-                         (self.code, 100 * (high/low - 1), date_to_update))
+                         (self.code, rate, date_to_update))
         self.conn.commit()
 
     def sort_by_date(self):
